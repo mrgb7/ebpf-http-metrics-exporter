@@ -66,3 +66,7 @@ sum by (code) (rate(http_responses_total[1m]))
 sum by (client_workload, server_workload) (rate(http_responses_total{code=~"5.."}[1m]))
   / sum by (client_workload, server_workload) (rate(http_responses_total[1m]))
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: small PRs, written by you, and you understand every line.
