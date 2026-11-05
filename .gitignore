@@ -1,0 +1,3 @@
+agent/bpf/vmlinux.h
+agent/bpf_*_bpfe*.go
+agent/bpf_*_bpfe*.o

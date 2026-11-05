@@ -1,0 +1,41 @@
+# A Service in front of the agent, so Prometheus has a stable name to scrape.
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-agent
+  namespace: kube-system
+spec:
+  selector: { app: http-agent }
+  ports: [{ port: 9100 }]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus
+  namespace: default
+data:
+  prometheus.yml: |
+    global: { scrape_interval: 10s }
+    scrape_configs:
+      - job_name: http-agent
+        static_configs: [{ targets: ["http-agent.kube-system:9100"] }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: default
+spec:
+  selector: { matchLabels: { app: prometheus } }
+  template:
+    metadata: { labels: { app: prometheus } }
+    spec:
+      containers:
+        - name: prometheus
+          image: quay.io/prometheus/prometheus:v3.5.0
+          args: ["--config.file=/etc/prometheus/prometheus.yml"]
+          ports: [{ containerPort: 9090 }]
+          volumeMounts: [{ name: config, mountPath: /etc/prometheus }]
+      volumes:
+        - name: config
+          configMap: { name: prometheus }

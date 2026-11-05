@@ -1,0 +1,44 @@
+# The agent runs on every node and needs to read pods from the API server.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: http-agent
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: http-agent
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: http-agent
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: http-agent }
+subjects: [{ kind: ServiceAccount, name: http-agent, namespace: kube-system }]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: http-agent
+  namespace: kube-system
+spec:
+  selector: { matchLabels: { app: http-agent } }
+  template:
+    metadata: { labels: { app: http-agent } }
+    spec:
+      serviceAccountName: http-agent
+      hostNetwork: true   # serve :9100 on the node
+      hostPID: true
+      containers:
+        - name: agent
+          image: http-agent:local
+          securityContext: { privileged: true }   # needed to load eBPF
+          volumeMounts: [{ name: debugfs, mountPath: /sys/kernel/debug }]
+      volumes:
+        - name: debugfs
+          hostPath: { path: /sys/kernel/debug }
